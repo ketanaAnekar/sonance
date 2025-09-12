@@ -1,0 +1,688 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Sonance — Grid Focus</title>
+<style>
+  :root { color-scheme: dark; }
+  * { box-sizing: border-box }
+  html,body { margin:0; height:100%; background:#0b0f14; color:#e7eef7; font-family: system-ui, sans-serif; }
+
+  /* Canvas region fills the screen */
+  #libraryView { width:100%; height:100%; }
+  #p5-holder { position: fixed; inset: 0; } /* full-bleed; no top bar */
+
+  /* Title (no bar; just text that floats above) */
+ #siteTitle{
+  position:fixed; top:14px; left:50%; transform:translateX(-50%);
+  z-index:5; pointer-events:none;
+  margin:0; font-weight:800; letter-spacing:0.32em; text-transform:uppercase;
+  font-size: clamp(18px, 2.8vw, 28px);
+  color:#000;             /* ← pure black */
+  opacity:1;              /* ← fully opaque */
+  text-shadow:none;       /* ← no drop shadow */
+}
+
+
+  /* Hint for audio on mobile */
+  #hintBar {
+    position:fixed; left:50%; transform:translateX(-50%);
+    bottom:18px; background:rgba(13,25,43,.75); border:1px solid #1b2b42;
+    padding:6px 10px; border-radius:10px; font-size:12px; opacity:.9;
+    pointer-events:none; z-index:3; display:none;
+  }
+</style>
+</head>
+<body>
+<h1 id="siteTitle">SONANCE</h1>
+<section id="libraryView"><div id="p5-holder"></div></section>
+<div id="hintBar">Tap once to enable sound</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.min.js"></script>
+<script>
+/* ----------------------- Data ----------------------- */
+let LIB = { songs: [] };
+async function loadLibrary(){ const res = await fetch('library.json'); LIB = await res.json(); }
+
+/* ----- peaks for circle motion (visual only) ----- */
+const DecodeAC = new (window.AudioContext || window.webkitAudioContext)();
+function computePeaks(buffer, bins=360){
+  const ch = buffer.getChannelData(0), len = ch.length, step = Math.max(1, Math.floor(len / bins));
+  const out = new Array(bins);
+  for (let i=0;i<bins;i++){
+    let min= 1, max=-1, start = i*step, end = Math.min(len, start+step);
+    for (let j=start;j<end;j++){ const v=ch[j]; if(v<min)min=v; if(v>max)max=v; }
+    out[i] = (Math.abs(min)+Math.abs(max)) * 0.5;
+  }
+  return out;
+}
+async function decodePeaks(url, bins=360){
+  try {
+    const buf = await (await fetch(url, { cache: 'no-store' })).arrayBuffer();
+    const audioBuf = await DecodeAC.decodeAudioData(buf);
+    return computePeaks(audioBuf, bins);
+  } catch { return null; }
+}
+function placeholderPeaks(n=360){
+  const out = new Array(n);
+  for (let i=0;i<n;i++) out[i] = 0.25 + 0.15*Math.sin(i*0.22) + 0.08*Math.sin(i*0.67 + 1.2);
+  return out;
+}
+
+/* ---------- palettes & knobs ---------- */
+const COOL_PALETTE = [165,170,176,182,188,195,202,208,214,220];
+const ringHue = (baseHue, ringIndex, ringCount)=> (baseHue - 24) + (48 * (ringIndex/(ringCount-1)));
+
+const STROKE_RANGE   = [8, 20];
+const OPACITY_RANGE  = [0.62, 0.96];
+const RING_RANGE     = [8, 12];
+const FILL_PATTERN   = [2, 3];
+
+/* === Fixed 3x5 grid; minimized whitespace === */
+const GRID_CFG = { marginPct: 0.04, gutterPct: 0.03, minR: 56, fillK: 0.64 };
+const GRID_RC  = { rows: 3, cols: 5 };
+
+let previews = [];
+let libSketch;
+
+/* -------- Index-based circle styling (hue/sat/alpha) --------
+   Indexes are row-major: 0..4 top row, 5..9 middle row, 10..14 bottom row.
+   For "leave as is", put null.
+*/
+const CIRCLE_STYLE = [
+  /* row 1 */ 
+  { hue: 285, sat: 1.00, alpha: 0.90 }, // 0: purple shades, 90%
+  null,                                  // 1: as is
+  { hue:   0, sat: 0.06, alpha: 0.40 },  // 2: metallic/silver, 40%
+  { hue:  35, sat: 1.00, alpha: 0.78 },  // 3: orange, 78%
+  { hue: 150, sat: 1.00, alpha: 0.67 },  // 4: darker green, 67%
+
+  /* row 2 */
+  { hue: 350, sat: 1.00, alpha: 0.83 },  // 5: bright pink/red, 83%
+  { hue:  54, sat: 1.00, alpha: 0.50 },  // 6: bright yellow, 50%
+  { hue: 300, sat: 1.00, alpha: 0.98 },  // 7: bright purple, 98%
+  { hue: 125, sat: 1.00, alpha: 0.86 },  // 8: bright green, 86%
+  null,                                  // 9: as is
+
+  /* row 3 */
+  { hue:  40, sat: 1.00, alpha: 0.78 },  // 10: orange-yellow, 78%
+  { hue:  20, sat: 1.00, alpha: 0.80 },  // 11: pinky-orangey, 80%
+  { hue:   0, sat: 1.00, alpha: 0.56 },  // 12: red, 56%
+  { hue:  18, sat: 0.85, alpha: 1.00 },  // 13: soft pink/orange, 100%
+  null                                   // 14: as is
+];
+const styleForIndex = (i)=> (i>=0 && i<CIRCLE_STYLE.length) ? CIRCLE_STYLE[i] : null;
+
+/* helpers */
+const rand = (a,b)=> a + Math.random()*(b-a);
+const randi = (a,b)=> Math.floor(rand(a,b+1));
+const coolHue = i => COOL_PALETTE[i % COOL_PALETTE.length];
+const seededIndex = (len, seed) => Math.floor((Math.abs(Math.sin(seed*12.9898 + 78.233) * 43758.5453) % 1) * len);
+const clamp01 = v => v<0?0:v>1?1:v;
+const smooth = t => t<0 ? 0 : t>1 ? 1 : t*t*(3-2*t);
+const lerp = (a,b,t)=>a+(b-a)*t;
+
+/* -------- Title-safe grid ---------- */
+function titleSafeTop(){
+  const el = document.getElementById('siteTitle');
+  if (!el) return 0;
+  const r = el.getBoundingClientRect();
+  return r.height + 18; // a little breathing room under the title
+}
+
+function chooseBestGrid(n, W, H, safeTop){
+  const rows = GRID_RC.rows, cols = GRID_RC.cols;
+  const m = Math.min(W,H) * GRID_CFG.marginPct;
+  const g = Math.min(W,H) * GRID_CFG.gutterPct;
+
+  // Reduce available height by the title's occupied space
+  const usableH = Math.max(60, H - safeTop - m);
+
+  const cellW = (W - 2*m - (cols-1)*g) / cols;
+  const cellH = (usableH - (rows-1)*g) / rows;
+
+  // Slight pad so glow never clips cell bounds
+  const glowPad = 6;
+  const R = Math.max(GRID_CFG.minR, Math.min(cellW, cellH) * GRID_CFG.fillK) - glowPad;
+
+  return { rows, cols, cellW, cellH, R, m, g, safeTop };
+}
+
+function layoutPreviewsAuto(){
+  const holder = document.getElementById('p5-holder');
+  const r = holder.getBoundingClientRect();
+  const W = r.width, H = r.height;
+  const safeTop = titleSafeTop();
+  const grid = chooseBestGrid(previews.length, W, H, safeTop);
+
+  previews.forEach((p, i) => {
+    const c = i % grid.cols;
+    const rr = Math.floor(i / grid.cols);
+    p.row = rr; p.col = c;
+    p.x = grid.m + c * (grid.cellW + grid.g) + grid.cellW/2;
+    p.y = grid.safeTop + grid.m + rr * (grid.cellH + grid.g) + grid.cellH/2;
+    p.R = grid.R;
+
+    // where items slide to when unfocused (off-screen)
+    p.offX = p.x + (p.x < W/2 ? -W*0.9 : W*0.9);
+    p.offY = p.y + (p.y < H/2 ? -H*0.9 : H*0.9);
+  });
+
+  // first-visit reveal order: row0 L→R, row1 R→L, row2 L→R
+  if (!reveal.armed) {
+    reveal.order = [];
+    for (let rr=0; rr<grid.rows; rr++){
+      const rowIdxs = [];
+      for (let c=0; c<grid.cols; c++){
+        const idx = rr*grid.cols + c;
+        if (idx < previews.length) rowIdxs.push(idx);
+      }
+      if (rr % 2 === 1) rowIdxs.reverse();
+      reveal.order.push(...rowIdxs);
+    }
+    reveal.when.clear();
+    reveal.start = performance.now();
+    reveal.order.forEach((idx,i)=> reveal.when.set(idx, reveal.start + i*reveal.gap));
+    reveal.armed = true;
+  }
+}
+
+/* -------- Build previews -------- */
+async function buildPreviews() {
+  previews = (LIB.songs || []).map((song, i)=>{
+    const sty = styleForIndex(i);
+    const hueBase = Number.isFinite(sty?.hue)
+      ? ((sty.hue % 360) + 360) % 360
+      : (coolHue(randi(0, COOL_PALETTE.length-1)) + rand(-10,10) + 360) % 360;
+
+    const strokeMin = rand(STROKE_RANGE[0], Math.min(14, STROKE_RANGE[1]-2));
+    const strokeMax = rand(Math.max(strokeMin+2, 14), STROKE_RANGE[1]);
+    const opMin = rand(OPACITY_RANGE[0], 0.78);
+    const opMax = rand(0.90, OPACITY_RANGE[1]);
+    const rings  = randi(RING_RANGE[0], RING_RANGE[1]);
+    const fillStep   = randi(FILL_PATTERN[0], FILL_PATTERN[1]);
+    const fillOffset = randi(0, fillStep-1);
+
+    return {
+      song,
+      peaks: placeholderPeaks(360),
+      x:0, y:0, R:110, hue: hueBase, sat: Number.isFinite(sty?.sat) ? clamp01(sty.sat) : 1.0,
+      alphaScale: Number.isFinite(sty?.alpha) ? clamp01(sty.alpha) : 1.0,
+      hover:0, env: [], seed: Math.random()*1000, rings,
+      strokeMin, strokeMax, opMin, opMax, fillStep, fillOffset,
+      _sprites: null,     // orbit sprites (with pixel samples)
+      _audio: null        // { audio, src, analyser, gain, data }
+    };
+  });
+
+  layoutPreviewsAuto();
+
+  await Promise.allSettled(previews.map(async (p)=>{
+    const peaks = await decodePeaks(p.song.audio, 360);
+    if (peaks) p.peaks = peaks;
+  }));
+}
+
+/* -------- Background -------- */
+function drawLibraryBG(p, t){
+  const ctx = p.drawingContext, w = p.width, h = p.height;
+  const pulse = 0.02 * Math.sin(t * 0.35);
+  const cx = w * 0.52, cy = h * 0.56, R = Math.max(w,h) * (0.84 + 0.04*pulse);
+
+  const g = ctx.createRadialGradient(cx, cy, 0, cx, cy, R);
+  g.addColorStop(0.00, 'rgba(255,253,254,0.98)');
+  g.addColorStop(0.45, 'rgba(255,244,249,0.98)');
+  g.addColorStop(1.00, 'rgba(250,238,245,0.96)');
+  ctx.fillStyle = g; ctx.fillRect(0,0,w,h);
+
+  const blob1 = ctx.createRadialGradient(w*0.35, h*0.38, 0, w*0.35, h*0.38, Math.max(w,h)*0.55);
+  blob1.addColorStop(0.00, 'rgba(255,170,210,0.10)');
+  blob1.addColorStop(1.00, 'rgba(255,210,150,0.04)');
+  const blob2 = ctx.createRadialGradient(w*0.68, h*0.62, 0, w*0.68, h*0.62, Math.max(w,h)*0.70);
+  blob2.addColorStop(0.00, 'rgba(190,225,255,0.08)');
+  blob2.addColorStop(1.00, 'rgba(200,235,255,0.03)');
+
+  const keep = ctx.globalCompositeOperation;
+  ctx.globalCompositeOperation = 'screen';
+  ctx.fillStyle = blob1; ctx.fillRect(0,0,w,h);
+  ctx.fillStyle = blob2; ctx.fillRect(0,0,w,h);
+  ctx.globalCompositeOperation = keep;
+
+  ctx.globalCompositeOperation = 'multiply';
+  const v = ctx.createRadialGradient(w/2, h/2, Math.min(w,h)*0.45, w/2, h/2, Math.max(w,h)*0.95);
+  v.addColorStop(0.00, 'rgba(0,0,0,0.00)');
+  v.addColorStop(1.00, 'rgba(0,0,0,0.035)');
+  ctx.fillStyle = v; ctx.fillRect(0,0,w,h);
+  ctx.globalCompositeOperation = keep;
+}
+
+/* -------- circle helpers -------- */
+function sampleAt(peaks, pos){
+  const N = peaks.length; if (!N) return 0.0;
+  const i0 = Math.floor(pos)%N; const i1 = (i0+1)%N;
+  const f = pos - Math.floor(pos);
+  return peaks[i0]*(1-f) + peaks[i1]*f;
+}
+function smoothSample(peaks, pos){
+  const w = [0.06, 0.24, 0.40, 0.24, 0.06];
+  return w[0]*sampleAt(peaks, pos-2) + w[1]*sampleAt(peaks, pos-1) +
+         w[2]*sampleAt(peaks, pos  ) + w[3]*sampleAt(peaks, pos+1) +
+         w[4]*sampleAt(peaks, pos+2);
+}
+function followEnv(prev, target, dt, ATTACK, RELEASE){
+  const tau = (target > prev) ? ATTACK : RELEASE;
+  const c = Math.exp(-dt / Math.max(1e-4, tau));
+  return target + (prev - target)*c;
+}
+
+/* ---- CONCENTRIC CIRCLES (per-circle sat + alphaScale) ---- */
+function drawConcentric(p, prev, baseR, t, hueBase){
+  const ctx = p.drawingContext;
+  const keepOp = ctx.globalCompositeOperation;
+  const keepFilter = ctx.filter;
+
+  const rings = prev.rings;
+  if (prev.env.length !== rings) prev.env = new Array(rings).fill(0.0);
+
+  const PEAK_SCROLL_SPEED = 36, ATTACK=0.08, RELEASE=0.35;
+  const posBase = t * PEAK_SCROLL_SPEED;
+  const stride  = (prev.peaks.length || 360) / (rings+1);
+  const dt = p.deltaTime/1000;
+
+  const S = (prev.sat ?? 1.0);
+  const A = (prev.alphaScale ?? 1.0);
+
+  // halo
+  ctx.globalCompositeOperation = 'multiply';
+  p.noStroke(); p.fill(0,0,0,0.06 * A);
+  p.circle(0,0, baseR*2.1);
+
+  for (let i=0;i<rings;i++){
+    const hue    = ringHue(hueBase, i, rings);
+    const target = smoothSample(prev.peaks, posBase + i*stride);
+    prev.env[i]  = followEnv(prev.env[i], target, dt, ATTACK, RELEASE);
+
+    const pulse = 1 + (0.22 + 0.60*prev.env[i]) * 0.28;
+    const r     = baseR * (0.36 + i*(0.62/rings)) * pulse;
+
+    const strokeBase = p.map(p.noise(prev.seed + 10 + i*0.37 + t*0.35), 0, 1, prev.opMin, prev.opMax);
+    const fillBase   = p.map(p.noise(prev.seed + 20 + i*0.41 + t*0.32), 0, 1, prev.opMin, prev.opMax);
+    const strokeA    = p.constrain(strokeBase * (0.90 + 0.40*prev.env[i]), prev.opMin, prev.opMax) * A;
+    const fillA      = p.constrain(fillBase   * (0.85 + 0.45*prev.env[i]), prev.opMin, prev.opMax) * A;
+
+    // glow
+    ctx.globalCompositeOperation = 'color-dodge';
+    ctx.filter = 'blur(4px)';
+    p.noStroke();
+    p.fill(hue, S, 0.65, fillA*0.40);
+    p.circle(0, 0, r*2 * 0.74);
+
+    // edge
+    ctx.filter = 'none';
+    ctx.globalCompositeOperation = 'multiply';
+    p.noFill();
+    const w = p.map(p.noise(prev.seed + 100 + i*0.7 + t*0.3), 0, 1, prev.strokeMin, prev.strokeMax);
+    p.stroke(hue, S, 0.42, strokeA*0.95);
+    p.strokeWeight(w);
+    p.circle(0, 0, r*2);
+
+    // bright rim
+    ctx.globalCompositeOperation = 'overlay';
+    p.stroke(hue, S, 0.80, strokeA*0.30);
+    p.strokeWeight(Math.max(1, w*0.55));
+    p.circle(0, 0, r*2 * 0.92);
+  }
+
+  // center pulse
+  const avgEnv = prev.env.reduce((x,y)=>x+y,0)/rings;
+  ctx.globalCompositeOperation = 'multiply';
+  p.noStroke(); p.fill(hueBase, S, 0.50, 0.35 * A);
+  p.circle(0, 0, baseR * (0.30 + 0.40*avgEnv));
+
+  ctx.globalCompositeOperation = 'overlay';
+  p.fill(hueBase, S, 0.90, 0.18 * A);
+  p.circle(0, 0, baseR * (0.20 + 0.25*avgEnv));
+
+  ctx.filter = keepFilter || 'none';
+  ctx.globalCompositeOperation = keepOp;
+}
+
+/* ---------------- FX shapes (soft) ---------------- */
+let fxShapes = [];
+const CONTRAST_PALETTE = [220,235,250,265,280,300,325, 18,28,40];
+function pickVibrantForLightBG(){
+  const h = CONTRAST_PALETTE[randi(0, CONTRAST_PALETTE.length-1)] + rand(-10,10);
+  return { h, s: 1.0, l: rand(0.30, 0.44) };
+}
+function spawnFX(p){
+  const W = p.width, H = p.height;
+  const type = ['rect','ellipse','rightTri'][Math.floor(Math.random()*3)];
+  const r=rand(Math.min(W,H)*0.05, Math.min(W,H)*0.07);
+  const ttl=rand(8,16);
+  const x=rand(-r,W+r), y=rand(-r,H+r);
+  const rot=rand(0,Math.PI*2), spin=rand(-0.45,0.45);
+  const vx=rand(-0.12,0.12),  vy=rand(-0.12,0.12);
+  const { h, s, l } = pickVibrantForLightBG();
+  const ar = rand(0.70,1.40);
+  const L  = r*rand(2.2,2.3);
+  fxShapes.push({ type,x,y,r,ttl,life:0,rot,spin,h,s,l,a:0.75,vx,vy,ar,L });
+}
+function updateFX(p, dt){
+  if (!updateFX.elapsed) updateFX.elapsed = 0;
+  updateFX.elapsed += dt;
+
+  const baseInterval = 2.4, minInterval = 0.6;
+  const interval = Math.max(minInterval, baseInterval - updateFX.elapsed*0.03);
+  if (!updateFX.nextAt) updateFX.nextAt = interval;
+  updateFX.nextAt -= dt;
+  if (updateFX.nextAt <= 0 && fxShapes.length < 60){
+    spawnFX(p);
+    updateFX.nextAt = interval;
+  }
+
+  const ctx = p.drawingContext, keep = ctx.globalCompositeOperation;
+  ctx.globalCompositeOperation = 'source-over';
+
+  fxShapes = fxShapes.filter(sh => {
+    sh.life += dt; sh.x += sh.vx; sh.y += sh.vy; sh.rot += sh.spin*dt;
+
+    p.push(); p.translate(sh.x, sh.y); p.rotate(sh.rot);
+    p.noStroke();
+    p.fill(sh.h, sh.s, sh.l, sh.a);
+
+    if (sh.type === 'rect'){
+      p.rectMode(p.CENTER);
+      const w = sh.r*2, h = w*sh.ar;
+      p.rect(0, 0, w, h, Math.min(w,h)*0.08);
+    } else if (sh.type === 'ellipse'){
+      const rx = sh.r*1.1, ry = rx*sh.ar;
+      p.ellipse(0, 0, rx*2, ry*2);
+    } else {
+      const L = sh.L;
+      p.beginShape(); p.vertex(0, 0); p.vertex(L, 0); p.vertex(0, L); p.endShape(p.CLOSE);
+    }
+
+    p.pop();
+    return sh.life < sh.ttl;
+  });
+
+  ctx.globalCompositeOperation = keep;
+}
+
+/* ---------------- Landing reveal + Focus mode + Music ---------------- */
+let reveal = { order: [], when: new Map(), start: 0, dur: 520, gap: 140, armed: false };
+let focus  = { idx: null, t: 0, target: 0 };
+
+const UI = { cell: 14, blend: 'lighter', audioAmt: 0.9, usePixel: true };
+
+/* AUDIO chain (per song, lazy) */
+const AC = new (window.AudioContext || window.webkitAudioContext)();
+const hintBar = document.getElementById('hintBar');
+function showHint(){ if (AC.state === 'suspended') hintBar.style.display='block'; }
+function hideHint(){ hintBar.style.display='none'; }
+addEventListener('pointerdown', async ()=>{ try { await AC.resume(); } finally{ hideHint(); } }, { passive:true });
+
+async function ensureAudioFor(preview){
+  if (preview._audio) return preview._audio;
+  const audio = new Audio(preview.song.audio);
+  audio.crossOrigin = 'anonymous';
+  audio.preload = 'metadata';
+
+  const src = AC.createMediaElementSource(audio);
+  const analyser = AC.createAnalyser(); analyser.fftSize = 1024;
+  const gain = AC.createGain(); gain.gain.value = 0.0;
+
+  src.connect(analyser); analyser.connect(gain); gain.connect(AC.destination);
+  const data = new Uint8Array(analyser.frequencyBinCount);
+
+  preview._audio = { audio, src, analyser, gain, data };
+  showHint();
+  return preview._audio;
+}
+
+/* sprites for orbit images (with pixel samples for digital effect) */
+function makeSprite(bmp, meta){
+  const maxW = Math.round(Math.min(420, Math.max(200, innerWidth * 0.22)));
+  const scale = Math.min(1, maxW / bmp.width);
+  const w = Math.max(140, Math.floor(bmp.width * scale));
+  const h = Math.max(110, Math.floor(bmp.height * scale));
+  const off = document.createElement('canvas');
+  off.width = w; off.height = h;
+  const oc = off.getContext('2d', { willReadFrequently:true });
+  oc.drawImage(bmp, 0, 0, w, h);
+  const sample = oc.getImageData(0,0,w,h).data;
+
+  return { meta, w, h, off, sample, x:0, y:0 };
+}
+function loadBitmap(imgMeta){
+  return new Promise((resolve, reject)=>{
+    const img = new Image();
+    img.onload = async () => resolve(await createImageBitmap(img));
+    img.onerror = (e) => { console.warn('Image failed', imgMeta.src); reject(e); };
+    img.src = imgMeta.src;
+  });
+}
+async function ensureSpritesFor(preview){
+  if (preview._sprites || !preview.song?.images) return;
+  const results = await Promise.allSettled(preview.song.images.map(loadBitmap));
+  const items = preview.song.images
+    .map((meta,i)=>({ meta, bmp: results[i].status === 'fulfilled' ? results[i].value : null }))
+    .filter(it => it.bmp);
+  preview._sprites = items.map(it => makeSprite(it.bmp, it.meta));
+}
+
+function stopSong(preview, reset=true){
+  const A = preview?._audio; 
+  if (!A) return;
+  A.gain.gain.setTargetAtTime(0.0, AC.currentTime, 0.03);
+  const a = A.audio;
+  setTimeout(()=>{ try { a.pause(); if (reset) a.currentTime = 0; } catch {} }, 120);
+}
+
+/* ------------------------------ p5 sketch ------------------------------ */
+function startP5(){
+  const holder = document.getElementById('p5-holder');
+  const rect = () => holder.getBoundingClientRect();
+
+  libSketch = new p5((p) => {
+    p.setup = () => {
+      const r = rect();
+      p.createCanvas(r.width, r.height, p.P2D).parent(holder);
+      p.pixelDensity(1);
+      p.frameRate(60);
+      p.colorMode(p.HSL, 360, 1, 1, 1);
+      p.noStroke();
+    };
+    p.windowResized = () => {
+      const r = rect(); p.resizeCanvas(r.width, r.height);
+      layoutPreviewsAuto();
+    };
+
+    p.draw = () => {
+      const t = p.millis()/1000;
+      drawLibraryBG(p, t);
+
+      // ease focus tween
+      focus.t += (focus.target - focus.t) * 0.1;
+
+      const ctx = p.drawingContext;
+
+      /* ---- draw circles ---- */
+      previews.forEach((prev, i) => {
+        // sequential reveal
+        const now = performance.now();
+        const st  = reveal.when.get(i) ?? reveal.start;
+        const rProg = smooth((now - st) / reveal.dur);
+        if (rProg <= 0) return;
+
+        // hover amount + idle "breathing" to suggest interactivity
+        const hovering = p.dist(p.mouseX, p.mouseY, prev.x, prev.y) < prev.R*1.05;
+        prev.hover = clamp01((prev.hover||0) + (hovering ? 1 : -1)*0.12);
+        const idleBreath = 0.015 * Math.sin((t + i*0.37) * 1.2); // tiny ±1.5%
+
+        // slide others away
+        let drawX = prev.x, drawY = prev.y;
+        if (focus.idx !== null && i !== focus.idx){
+          const tt = smooth(focus.t);
+          drawX = lerp(prev.x, prev.offX, tt);
+          drawY = lerp(prev.y, prev.offY, tt);
+        }
+
+        const isFocus = (i === focus.idx);
+        const focusScale = isFocus ? (1 + 0.06*focus.t) : (1 - 0.04*focus.t);
+
+        // slightly stronger hover scale than before + idleBreath
+        const baseR = prev.R * (0.98*focusScale) * (0.35 + 0.65*rProg) * (1 + 0.06*prev.hover + idleBreath);
+        const hue   = prev.hue + 4*Math.sin(t*0.35);
+
+        p.push(); p.translate(drawX, drawY);
+        ctx.globalAlpha = Math.min(1, rProg * (isFocus ? 1 : 1 - 0.10*focus.t));
+        drawConcentric(p, prev, baseR, t, hue);
+        ctx.globalAlpha = 1;
+        p.pop();
+      });
+
+      /* ---- focus orbit images + digital enhancement + music hover ---- */
+      if (focus.idx !== null && focus.t > 0.02){
+        const prev = previews[focus.idx];
+        ensureSpritesFor(prev);
+        ensureAudioFor(prev);
+
+        const sprites = prev._sprites || [];
+        const A = prev._audio;
+
+        // analyser values
+        let vol = 0;
+        if (A){
+          A.analyser.getByteFrequencyData(A.data);
+          const n=A.data.length, low=A.data[0]|0, mid=A.data[(n*0.33)|0]|0, hi=A.data[(n*0.66)|0]|0;
+          vol = (low+mid+hi)/3/255;
+        }
+
+        const cx = prev.x, cy = prev.y;
+        const ringR = prev.R * (1.85 + 0.35*smooth(focus.t));
+        const N = Math.max(1, sprites.length);
+        const base = (t*0.35)% (2*Math.PI);
+
+        let hovered = null;
+
+        sprites.forEach((sp, k) => {
+          const ang = base + k * (2*Math.PI / N);
+          const s   = smooth(focus.t);
+          const x   = cx + Math.cos(ang) * ringR;
+          const y   = cy + Math.sin(ang) * ringR;
+          const w   = sp.w * 0.9, h = sp.h * 0.9;
+          sp.x = x - w/2; sp.y = y - h/2;
+
+          if (p.mouseX>=sp.x && p.mouseX<=sp.x+w && p.mouseY>=sp.y && p.mouseY<=sp.y+h) hovered = sp;
+
+          ctx.save();
+          ctx.globalAlpha = 0.96 * s;
+          ctx.drawImage(sp.off, sp.x, sp.y, w, h);
+          ctx.restore();
+        });
+
+        // music on hover (gain ramp + play/pause)
+        if (A){
+          const target = hovered ? 1.0 : 0.0;
+          A.gain.gain.setTargetAtTime(target, AC.currentTime, 0.05);
+          if (hovered){
+            if (AC.state === 'suspended') showHint(); else hideHint();
+            A.audio.play().catch(()=>{});
+          } else if (!hovered && !A.audio.paused && A.gain.gain.value < 0.02){
+            A.audio.pause();
+          }
+        }
+
+        // digital enhancement overlay (music reactive dots)
+        if (sprites.length){
+          const cell = UI.cell, blend = UI.blend, ai = UI.audioAmt;
+          ctx.save();
+          ctx.globalCompositeOperation = blend;
+
+          sprites.forEach((sp)=>{
+            const W = Math.floor(sp.w*0.9), H = Math.floor(sp.h*0.9);
+            const img = sp.sample; if (!img) return;
+            if (focus.t < 0.15) return;
+
+            for (let yy=0; yy<H; yy+=cell){
+              for (let xx=0; xx<W; xx+=cell){
+                const xi=Math.min(W-1, xx + (cell>>1));
+                const yi=Math.min(H-1, yy + (cell>>1));
+                const idx=(yi*W+xi)*4;
+                const r=img[idx], g=img[idx+1], b=img[idx+2];
+                ctx.fillStyle = `rgba(${r},${g},${b},0.7)`;  /* <- fixed backticks */
+
+                const base=cell*(0.26 + (r+g+b)/(3*255)*0.44);
+                const grow=1 + vol*ai*0.65;
+                const s=Math.max(2, base*grow);
+                ctx.beginPath();
+                ctx.arc(sp.x+xx+cell/2, sp.y+yy+cell/2, s*0.35, 0, Math.PI*2);
+                ctx.fill();
+              }
+            }
+          });
+
+          ctx.restore();
+        }
+      }
+
+      updateFX(p, p.deltaTime/1000);
+    };
+
+    // click: toggle focus (and stop songs when collapsing / switching)
+    p.mousePressed = () => {
+      const wasFocused = focus.idx != null ? previews[focus.idx] : null;
+
+      // did you click a circle?
+      let clickedIndex = -1;
+      for (let i=0; i<previews.length; i++){
+        const prev = previews[i];
+        if (p.dist(p.mouseX, p.mouseY, prev.x, prev.y) < prev.R*1.05){
+          clickedIndex = i;
+          break;
+        }
+      }
+
+      // click outside any circle -> collapse current and stop song
+      if (clickedIndex === -1){
+        if (wasFocused){
+          focus.target = 0;
+          stopSong(wasFocused, true);
+          const waitClear = () => { if (focus.t < 0.03) { focus.idx = null; return; } requestAnimationFrame(waitClear); };
+          requestAnimationFrame(waitClear);
+        }
+        return;
+      }
+
+      // clicked currently focused -> collapse & stop
+      if (clickedIndex === focus.idx){
+        focus.target = 0;
+        stopSong(previews[clickedIndex], true);
+        const waitClear = () => { if (focus.t < 0.03) { focus.idx = null; return; } requestAnimationFrame(waitClear); };
+        requestAnimationFrame(waitClear);
+        return;
+      }
+
+      // switching focus: stop old song first
+      if (wasFocused) stopSong(wasFocused, true);
+
+      // focus new circle
+      focus.idx = clickedIndex;
+      focus.target = 1;
+      ensureSpritesFor(previews[clickedIndex]);
+      ensureAudioFor(previews[clickedIndex]);
+    };
+  });
+}
+
+/* ----------------------- Boot ----------------------- */
+(async ()=>{
+  startP5();
+  await loadLibrary();
+  await buildPreviews();
+})();
+</script>
+</body>
+</html>

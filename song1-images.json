@@ -1,0 +1,12 @@
+[
+  {
+    "src": "images/song1/images/song1/01.jpg",
+    "start": 0,
+    "end": 10
+  },
+  {
+    "src": "images/song1/images/song1/02.jpg",
+    "start": 10,
+    "end": 20
+  }
+]

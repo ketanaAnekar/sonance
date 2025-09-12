@@ -1,0 +1,203 @@
+{
+  "songs": [
+    {
+      "id": "song1",
+      "title": "first",
+      "audio": "audio/TLove.mp3",
+      "images": [
+        { "src": "images/TLove/01.jpg", "start": 0, "end": 10 },
+        { "src": "images/TLove/02.jpg", "start": 10, "end": 20 },
+        { "src": "images/TLove/03.jpg", "start": 10, "end": 20 },
+        { "src": "images/TLove/04.jpg", "start": 10, "end": 20 },
+        { "src": "images/TLove/05.jpg", "start": 10, "end": 20 },
+        { "src": "images/TLove/06.jpg", "start": 10, "end": 20 },
+        { "src": "images/TLove/07.jpg", "start": 10, "end": 20 }
+      ]
+    },
+    {
+      "id": "song2",
+      "title": "cis",
+      "audio": "audio/MysteryLady.mp3",
+      "images": [
+        { "src": "images/MysteryLady/01.jpg", "start": 0,  "end": 8,  "text": "A — caption here" },
+        { "src": "images/MysteryLady/02.jpg", "start": 8,  "end": 16, "text": "B — caption here" },
+        { "src": "images/MysteryLady/03.jpg", "start": 16, "end": 24, "text": "C — caption here" },
+        { "src": "images/MysteryLady/04.jpg", "start": 24, "end": 32, "text": "D — caption here" },
+        { "src": "images/MysteryLady/05.jpg", "start": 32, "end": 40, "text": "E — caption here" },
+        { "src": "images/MysteryLady/06.jpg", "start": 32, "end": 40, "text": "E — caption here" },
+        { "src": "images/MysteryLady/07.jpg", "start": 32, "end": 40, "text": "E — caption here" }
+      ]
+    },
+    {"id": "song3",
+      "title": "youth",
+      "audio": "audio/Temperature.mp3",
+      "images": [
+        { "src": "images/Temperature/01.jpg", "start": 0,  "end": 8,  "text": "A — caption here" },
+        { "src": "images/Temperature/02.jpg", "start": 8,  "end": 16, "text": "B — caption here" },
+        { "src": "images/Temperature/03.jpg", "start": 8,  "end": 16, "text": "B — caption here" },
+        { "src": "images/Temperature/04.jpg", "start": 8,  "end": 16, "text": "B — caption here" },
+        { "src": "images/Temperature/05.jpg", "start": 8,  "end": 16, "text": "B — caption here" },
+        { "src": "images/Temperature/06.jpg", "start": 8,  "end": 16, "text": "B — caption here" },
+        { "src": "images/Temperature/07.jpg", "start": 8,  "end": 16, "text": "B — caption here" }
+      ]
+    },
+    {"id": "song4",
+      "title": "disconnected",
+      "audio": "audio/TheLessIKnowTheBetter.mp3",
+      "images": [
+    { "src": "images/TLIKTB/01.jpg", "start": 0,  "end": 8,  "text": "A — caption here" },
+    { "src": "images/TLIKTB/02.jpg", "start": 8,  "end": 16, "text": "B — caption here"},
+    { "src": "images/TLIKTB/04.jpg", "start": 24, "end": 32, "text": "B — caption here" },
+    { "src": "images/TLIKTB/05.jpg", "start": 32, "end": 40, "text": "B — caption here" },
+    { "src": "images/TLIKTB/06.jpg", "start": 40, "end": 48, "text": "B — caption here" },
+    { "src": "images/TLIKTB/07.jpg", "start": 48, "end": 56, "text": "B — caption here" }
+      ]
+    },
+    {"id": "song5",
+      "title": "rebel",
+      "audio": "audio/Situations.mp3",
+      "images": [
+    { "src": "images/Situation/01.jpg", "start": 0,  "end": 8,  "text": "A — caption here" },
+    { "src": "images/Situation/02.jpg", "start": 8,  "end": 16, "text": "B — caption here"},
+    { "src": "images/Situation/03.jpg", "start": 8,  "end": 16, "text": "B — caption here"},
+    { "src": "images/Situation/04.jpg", "start": 24, "end": 32, "text": "B — caption here" },
+    { "src": "images/Situation/05.jpg", "start": 32, "end": 40, "text": "B — caption here" },
+    { "src": "images/Situation/06.jpg", "start": 40, "end": 48, "text": "B — caption here" },
+    { "src": "images/Situation/07.jpg", "start": 48, "end": 56, "text": "B — caption here" }
+      ]
+    },
+    {"id": "song6",
+      "title": "tame",
+      "audio": "audio/BreatheDeeper.mp3",
+      "images": [
+    { "src": "images/BreatheDeeper/01.jpg", "start": 0,  "end": 8,  "text": "A — caption here" },
+    { "src": "images/BreatheDeeper/02.jpg", "start": 8,  "end": 16, "text": "B — caption here"},
+    { "src": "images/BreatheDeeper/03.jpg", "start": 8,  "end": 16, "text": "B — caption here"},
+    { "src": "images/BreatheDeeper/04.jpg", "start": 24, "end": 32, "text": "B — caption here" },
+    { "src": "images/BreatheDeeper/05.jpg", "start": 32, "end": 40, "text": "B — caption here" },
+    { "src": "images/BreatheDeeper/06.jpg", "start": 40, "end": 48, "text": "B — caption here" },
+    { "src": "images/BreatheDeeper/07.jpg", "start": 48, "end": 56, "text": "B — caption here" }
+      ]
+    },
+     {"id": "song7",
+      "title": "#ravergurl",
+      "audio": "audio/GetFree.mp3",
+      "images": [
+    { "src": "images/GetFree/01.jpg", "start": 0,  "end": 8,  "text": "A — caption here" },
+    { "src": "images/GetFree/02.jpg", "start": 8,  "end": 16, "text": "B — caption here"},
+     { "src": "images/GetFree/03.jpg", "start": 8,  "end": 16, "text": "B — caption here"},
+    { "src": "images/GetFree/04.jpg", "start": 24, "end": 32, "text": "B — caption here" },
+    { "src": "images/GetFree/05.jpg", "start": 32, "end": 40, "text": "B — caption here" },
+    { "src": "images/GetFree/06.jpg", "start": 40, "end": 48, "text": "B — caption here" },
+    { "src": "images/GetFree/07.jpg", "start": 48, "end": 56, "text": "B — caption here" }
+      ]
+    },
+    {"id": "song8",
+      "title": "Junior_spring",
+      "audio": "audio/Say.mp3",
+      "images": [
+    { "src": "images/Say/01.jpg", "start": 0,  "end": 8,  "text": "A — caption here" },
+    { "src": "images/Say/02.jpg", "start": 8,  "end": 16, "text": "B — caption here"},
+     { "src": "images/Say/03.jpg", "start": 8,  "end": 16, "text": "B — caption here"},
+    { "src": "images/Say/04.jpg", "start": 24, "end": 32, "text": "B — caption here" },
+    { "src": "images/Say/05.jpg", "start": 32, "end": 40, "text": "B — caption here" },
+    { "src": "images/Say/06.jpg", "start": 40, "end": 48, "text": "B — caption here" },
+    { "src": "images/Say/07.jpg", "start": 48, "end": 56, "text": "B — caption here" }
+      ]
+    },
+    {"id": "song9",
+      "title": "knowing d:)",
+      "audio": "audio/OtroAtardecer.mp3",
+      "images": [
+    { "src": "images/OtroAtardecer/01.jpg", "start": 0,  "end": 8,  "text": "A — caption here" },
+    { "src": "images/OtroAtardecer/02.jpg", "start": 8,  "end": 16, "text": "B — caption here"},
+     { "src": "images/OtroAtardecer/03.jpg", "start": 8,  "end": 16, "text": "B — caption here"},
+    { "src": "images/OtroAtardecer/04.jpg", "start": 24, "end": 32, "text": "B — caption here" },
+    { "src": "images/OtroAtardecer/05.jpg", "start": 32, "end": 40, "text": "B — caption here" },
+    { "src": "images/OtroAtardecer/06.jpg", "start": 40, "end": 48, "text": "B — caption here" },
+    { "src": "images/OtroAtardecer/07.jpg", "start": 48, "end": 56, "text": "B — caption here" }
+      ]
+    },
+    {"id": "song10",
+      "title": "the last summer",
+      "audio": "audio/LambsWool.mp3",
+      "images": [
+    { "src": "images/LambsWool/01.jpg", "start": 0,  "end": 8,  "text": "A — caption here" },
+    { "src": "images/LambsWool/02.jpg", "start": 8,  "end": 16, "text": "B — caption here"},
+     { "src": "images/LambsWool/03.jpg", "start": 8,  "end": 16, "text": "B — caption here"},
+    { "src": "images/LambsWool/04.jpg", "start": 24, "end": 32, "text": "B — caption here" },
+    { "src": "images/LambsWool/05.jpg", "start": 32, "end": 40, "text": "B — caption here" },
+    { "src": "images/LambsWool/06.jpg", "start": 40, "end": 48, "text": "B — caption here" },
+    { "src": "images/LambsWool/07.jpg", "start": 48, "end": 56, "text": "B — caption here" }
+      ]
+    },
+      {"id": "song11",
+      "title": "fresh spring",
+      "audio": "audio/FunAtTheAlley.mp3",
+      "images": [
+    { "src": "images/FunAtTheAlley/01.jpg", "start": 0,  "end": 8,  "text": "A — caption here" },
+    { "src": "images/FunAtTheAlley/02.jpg", "start": 8,  "end": 16, "text": "B — caption here"},
+     { "src": "images/FunAtTheAlley/03.jpg", "start": 8,  "end": 16, "text": "B — caption here"},
+    { "src": "images/FunAtTheAlley/04.jpg", "start": 24, "end": 32, "text": "B — caption here" },
+    { "src": "images/FunAtTheAlley/05.jpg", "start": 32, "end": 40, "text": "B — caption here" },
+    { "src": "images/FunAtTheAlley/06.jpg", "start": 40, "end": 48, "text": "B — caption here" },
+    { "src": "images/FunAtTheAlley/07.jpg", "start": 48, "end": 56, "text": "B — caption here" }
+      ]
+    },
+    {"id": "song12",
+      "title": "summer back",
+      "audio": "audio/NSide.mp3",
+      "images": [
+    { "src": "images/NSide/01.jpg", "start": 0,  "end": 8,  "text": "A — caption here" },
+    { "src": "images/NSide/02.jpg", "start": 8,  "end": 16, "text": "B — caption here"},
+     { "src": "images/NSide/03.jpg", "start": 8,  "end": 16, "text": "B — caption here"},
+    { "src": "images/NSide/04.jpg", "start": 24, "end": 32, "text": "B — caption here" },
+    { "src": "images/NSide/05.jpg", "start": 32, "end": 40, "text": "B — caption here" },
+    { "src": "images/NSide/06.jpg", "start": 40, "end": 48, "text": "B — caption here" },
+    { "src": "images/NSide/07.jpg", "start": 48, "end": 56, "text": "B — caption here" },
+     { "src": "images/NSide/08.jpg", "start": 48, "end": 56, "text": "B — caption here" },
+      { "src": "images/NSide/09.jpg", "start": 48, "end": 56, "text": "B — caption here" }
+      ]
+    },
+    {"id": "song13",
+      "title": "back in the days...",
+      "audio": "audio/HeyAngel.mp3",
+      "images": [
+    { "src": "images/HeyAngel/01.jpg", "start": 0,  "end": 8,  "text": "A — caption here" },
+    { "src": "images/HeyAngel/02.jpg", "start": 8,  "end": 16, "text": "B — caption here"},
+     { "src": "images/HeyAngel/03.jpg", "start": 8,  "end": 16, "text": "B — caption here"},
+    { "src": "images/HeyAngel/04.jpg", "start": 24, "end": 32, "text": "B — caption here" },
+    { "src": "images/HeyAngel/05.jpg", "start": 32, "end": 40, "text": "B — caption here" },
+    { "src": "images/HeyAngel/06.jpg", "start": 40, "end": 48, "text": "B — caption here" },
+    { "src": "images/HeyAngel/07.jpg", "start": 48, "end": 56, "text": "B — caption here" }
+      ]
+    },
+      {"id": "song14",
+      "title": "intern szn",
+      "audio": "audio/SummerOnTheInside.mp3",
+      "images": [
+    { "src": "images/SummerOnTheInside/01.jpg", "start": 0,  "end": 8,  "text": "A — caption here" },
+    { "src": "images/SummerOnTheInside/02.jpg", "start": 8,  "end": 16, "text": "B — caption here"},
+    { "src": "images/SummerOnTheInside/03.jpg", "start": 8,  "end": 16, "text": "B — caption here"},
+    { "src": "images/SummerOnTheInside/04.jpg", "start": 24, "end": 32, "text": "B — caption here" },
+    { "src": "images/SummerOnTheInside/05.jpg", "start": 32, "end": 40, "text": "B — caption here" },
+    { "src": "images/SummerOnTheInside/06.jpg", "start": 40, "end": 48, "text": "B — caption here" },
+    { "src": "images/SummerOnTheInside/07.jpg", "start": 48, "end": 56, "text": "B — caption here" }
+      ]
+    },
+      {"id": "song15",
+      "title": "USA USA USA",
+      "audio": "audio/MoonChild.mp3",
+      "images": [
+    { "src": "images/MoonChild/01.jpg", "start": 0,  "end": 8,  "text": "A — caption here" },
+    { "src": "images/MoonChild/02.jpg", "start": 8,  "end": 16, "text": "B — caption here"},
+    { "src": "images/MoonChild/03.jpg", "start": 8,  "end": 16, "text": "B — caption here"},
+    { "src": "images/MoonChild/04.jpg", "start": 24, "end": 32, "text": "B — caption here" },
+    { "src": "images/MoonChild/05.jpg", "start": 32, "end": 40, "text": "B — caption here" },
+    { "src": "images/MoonChild/06.jpg", "start": 40, "end": 48, "text": "B — caption here" },
+    { "src": "images/MoonChild/07.jpg", "start": 48, "end": 56, "text": "B — caption here" }
+      ]
+    }
+
+  ]
+}
