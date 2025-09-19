@@ -189,13 +189,13 @@
       "title": "USA USA USA",
       "audio": "audio/MoonChild.mp3",
       "images": [
-    { "src": "images/MoonChild/01.jpg", "start": 0,  "end": 8,  "text": "A — caption here" },
-    { "src": "images/MoonChild/02.jpg", "start": 8,  "end": 16, "text": "B — caption here"},
-    { "src": "images/MoonChild/03.jpg", "start": 8,  "end": 16, "text": "B — caption here"},
-    { "src": "images/MoonChild/04.jpg", "start": 24, "end": 32, "text": "B — caption here" },
-    { "src": "images/MoonChild/05.jpg", "start": 32, "end": 40, "text": "B — caption here" },
-    { "src": "images/MoonChild/06.jpg", "start": 40, "end": 48, "text": "B — caption here" },
-    { "src": "images/MoonChild/07.jpg", "start": 48, "end": 56, "text": "B — caption here" }
+    { "src": "images/moonChild /01.jpg", "start": 0,  "end": 8,  "text": "A — caption here" },
+    { "src": "images/moonChild /02.jpg", "start": 8,  "end": 16, "text": "B — caption here"},
+    { "src": "images/moonChild /04.jpg", "start": 8,  "end": 16, "text": "B — caption here"},
+    { "src": "images/moonChild /05.jpg", "start": 24, "end": 32, "text": "B — caption here" },
+    { "src": "images/moonChild /06.jpg", "start": 32, "end": 40, "text": "B — caption here" },
+    { "src": "images/moonChild /07.jpg", "start": 40, "end": 48, "text": "B — caption here" },
+    { "src": "images/moonChild /03.jpg", "start": 40, "end": 48, "text": "B — caption here" }
       ]
     }
 
